@@ -25,7 +25,7 @@ executeMin : ( GameModel, Move ) -> ( Float, Move ) -> ( Float, Move )
 executeMin ( model, move ) ( bestScore, bestMove ) =
     let
         newBeta =
-            abMin 2 bestScore 1000 model
+            abMin 1 bestScore 1000 model
     in
         if (newBeta > bestScore) then
             ( newBeta, move )
