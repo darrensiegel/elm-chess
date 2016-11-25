@@ -15,16 +15,17 @@ client, I was enjoying the development so much that I continued and implemented 
 
 ### `Chess.Engine`
 
-Module `Chess.Egine` contains the implementation of minimax with alpha-beta pruning.  The engine, as it is checked in right
+Module `Chess.Engine` contains an implementation of minimax with alpha-beta pruning.  The engine, as it is checked in right
 now, only explores two levels (the computer move and a subsequent human move).  On my MacBook Pro it takes only a second
 or two to generate a move.  Increasing the depth of search to three levels is still fairly playable, though moves take 
 closer to twenty or thirty seconds to calculate.  At this point the browser will sometimes show a script warning.
 
 ### `Chess.Eval`
 
-Board evaulation was perhaps the most fun aspect of the game to implement. As it stands right now, the evaluation function
-yields a computer player that is quite aggressive.  There are still some ideas that I'd like to explore such as piece
-weightings that change according to the game phase, etc. 
+Board evaulation was perhaps the most fun aspect of the game to implement. Piece count, control of center, pawn structure,
+as well as threatened pieces all factor in to the strength of board evaluation. There are still some ideas that I'd like to
+explore such as piece weightings that change according to the game phase.  As it stands right now, the evaluation
+function yields a computer player that is quite aggressive.   
 
 ## Future
 
