@@ -1,11 +1,12 @@
 # elm-chess
 
-A human versus computer chess game, entirely in Elm. 
+A human versus computer chess game, entirely in Elm. Nothing fancy: play it live [here](https://elm-chess.com).
 
-## Inspiration
+## Background
 
 I was inspired to write a chess engine after watching a lecture on the minimax algorithm and alpha beta pruning from 
-[MIT's AI course](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/).
+[MIT's AI course](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/).  I have been itching to try out Elm in a non-trivial project, so I eschewed my usual React/Redux stack and dove into
+Elm. 
 
 ## Details
 
