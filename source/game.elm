@@ -267,7 +267,7 @@ px value =
 
 isBlack : Int -> Int -> Bool
 isBlack x y =
-    (rem (x + y) 2) == 0
+    (rem (x + y) 2) == 1
 
 
 color x y =
