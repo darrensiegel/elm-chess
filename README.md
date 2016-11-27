@@ -1,17 +1,19 @@
 # elm-chess
 
-A human versus computer chess game, entirely in Elm. 
+A human versus computer chess game, entirely in Elm. Nothing fancy: play it live [here](https://elm-chess.com).
 
-## Inspiration
+## Background
 
-I was inspired to write a chess engine after watching a lecture on minimax and alpha beta pruning from 
-[MIT's AI course](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/).
+I was inspired to write a chess engine after watching a lecture on the minimax algorithm and alpha beta pruning from 
+[MIT's AI course](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/).  I have been itching to try out Elm in a non-trivial project, so I eschewed my usual React/Redux stack and dove into
+Elm. 
 
 ## Details
 
 My original plan was to implement the chess engine as a webservice, which then a client application (written in Elm) would
-send requests to in order to receive the computer generated moves. After digging in and building the beginnings of the 
-client, I was enjoying the development so much that I continued and implemented everything in Elm, client-side.
+send requests to in order to receive the computer generated moves. I figured this would be a good way for me to finally
+gain some experience with Elm. After digging in and building the beginnings of the client, I was enjoying the development
+enough that I continued and implemented everything in Elm, client-side, eschewing my original plan. 
 
 ### `Chess.Engine`
 
@@ -27,9 +29,11 @@ as well as threatened pieces all factor in to the strength of board evaluation. 
 explore such as piece weightings that change according to the game phase.  As it stands right now, the evaluation
 function yields a computer player that is quite aggressive.   
 
-## Future
+### `Chess.FEN`
 
-Eventually I hope to implement the engine as a backend service, maybe in Elixir or Haskell or Clojure. 
+Model for parsing Forsyth-Edwards Notation. My original intent was to use FEN as the format for requests to the server. After
+going completely client-side, I found FEN still useful for specifying initial starting boards for debugging and testing.
+
 
 ## Feedback
 
