@@ -344,6 +344,7 @@ isVacant ( position, gameSquare ) =
 
 
 
+
 allAttackFree : Player -> Position -> Position -> Position -> Board -> Bool
 allAttackFree player one two three board =
   if (not (checkForAttacks player one board)) then
@@ -568,9 +569,9 @@ checkForAttacks player position board =
     let
         yDirection =
             if player == White then
-                1
-            else
                 -1
+            else
+                1
     in
         ((List.map (isOpponentPiece player Knight board) (knightMoves position)) |> List.any (\v -> v))
             || ((isOpponentPiece player Pawn board (Position (position.x - 1) (position.y + yDirection)))

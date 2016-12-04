@@ -75,6 +75,7 @@ executeEngine model =
     Task.perform ComputerMove (Engine.nextMove model.game)
 
 
+
 updateSquareClicked : Chess.Position -> Model -> ( Model, Cmd Msg )
 updateSquareClicked position model =
     let
@@ -193,6 +194,9 @@ appendMoveHistory halfMove model =
 processMove : Chess.Position -> Chess.Position -> Model -> Model
 processMove src dest model =
     let
+        log =
+            Debug.log "processMove" (posToString dest)
+
         updatedGameModel =
             updateGameModel ( src, dest ) model.game
 
@@ -264,7 +268,7 @@ px value =
 
 isBlack : Int -> Int -> Bool
 isBlack x y =
-    (rem (x + y) 2) == 1
+    (rem (x + y) 2) == 0
 
 
 color x y =
