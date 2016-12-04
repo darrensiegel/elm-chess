@@ -343,13 +343,31 @@ isVacant ( position, gameSquare ) =
             False
 
 
+
+allAttackFree : Player -> Position -> Position -> Position -> Board -> Bool
+allAttackFree player one two three board =
+  if (not (checkForAttacks player one board)) then
+    if (not (checkForAttacks player two board)) then
+      not (checkForAttacks player three board)
+    else
+      False
+  else
+    False
+
+
 processQueenCastle : Player -> Position -> GameModel -> List Position
 processQueenCastle player position model =
     let
         intermediateSquaresVacant =
             List.all isVacant (findPiecesBy (queenSidePredicate position) model.board)
+
+        one = position
+
+        two = Position (position.x - 1) position.y
+
+        three = Position (position.x - 2) position.y
     in
-        if intermediateSquaresVacant then
+        if intermediateSquaresVacant && (allAttackFree player one two three model.board) then
             [ Position (position.x - 2) position.y ]
         else
             []
@@ -360,8 +378,14 @@ processKingCastle player position model =
     let
         intermediateSquaresVacant =
             List.all isVacant (findPiecesBy (kingSidePredicate position) model.board)
+
+        one = position
+
+        two = Position (position.x + 1) position.y
+
+        three = Position (position.x + 2) position.y
     in
-        if intermediateSquaresVacant then
+        if intermediateSquaresVacant && (allAttackFree player one two three model.board) then
             [ Position (position.x + 2) position.y ]
         else
             []
@@ -823,7 +847,7 @@ updateBlackCastle position gameSquare model =
     let
         kingMoved =
             case gameSquare of
-                Occupied _ King ->
+                Occupied Black King ->
                     True
 
                 _ ->
@@ -856,7 +880,7 @@ updateWhiteCastle position gameSquare model =
     let
         kingMoved =
             case gameSquare of
-                Occupied _ King ->
+                Occupied White King ->
                     True
 
                 _ ->
