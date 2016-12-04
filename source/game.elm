@@ -193,9 +193,6 @@ appendMoveHistory halfMove model =
 processMove : Chess.Position -> Chess.Position -> Model -> Model
 processMove src dest model =
     let
-        log =
-            Debug.log "processMove" (posToString dest)
-
         updatedGameModel =
             updateGameModel ( src, dest ) model.game
 
