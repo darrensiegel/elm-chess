@@ -1,9 +1,9 @@
-module Chess.Find exposing (..)
+module Find exposing (..)
 
 -- Module containing functions for finding (i.e. selectng) pieces from
 -- the board
 
-import Chess.Core exposing (..)
+import Core exposing (..)
 import Array exposing (Array)
 import Char exposing (..)
 

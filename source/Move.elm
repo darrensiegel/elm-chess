@@ -1,7 +1,7 @@
-module Chess.Move exposing (..)
+module Move exposing (..)
 
-import Chess.Find exposing (..)
-import Chess.Core exposing (..)
+import Find exposing (..)
+import Core exposing (..)
 import Array exposing (Array)
 import Char exposing (..)
 

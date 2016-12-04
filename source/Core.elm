@@ -1,4 +1,4 @@
-module Chess.Core exposing (..)
+module Core exposing (..)
 
 import Array exposing (Array)
 import Char exposing (..)

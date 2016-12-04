@@ -1,9 +1,9 @@
-module Chess.Engine exposing (nextMove)
+module Engine exposing (nextMove)
 
-import Chess.Find exposing (..)
-import Chess.Core exposing (..)
-import Chess.Move as Move exposing (..)
-import Chess.Eval as Eval exposing (..)
+import Find exposing (..)
+import Core exposing (..)
+import Move as Move exposing (..)
+import Eval as Eval exposing (..)
 import Array exposing (Array)
 import Task exposing (..)
 

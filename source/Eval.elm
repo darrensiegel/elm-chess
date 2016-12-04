@@ -1,8 +1,8 @@
-module Chess.Eval exposing (eval)
+module Eval exposing (eval)
 
-import Chess.Find exposing (..)
-import Chess.Core exposing (..)
-import Chess.Move as Move exposing (..)
+import Find exposing (..)
+import Core exposing (..)
+import Move as Move exposing (..)
 import Array exposing (Array)
 import Task exposing (..)
 import Set exposing (..)

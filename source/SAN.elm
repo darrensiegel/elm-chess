@@ -1,7 +1,7 @@
-module Chess.SAN exposing (toHalfMove, HalfMove, AllMoves)
+module SAN exposing (toHalfMove, HalfMove, AllMoves)
 
-import Chess.Core exposing (..)
-import Chess.Move as Move exposing (..)
+import Core exposing (..)
+import Move as Move exposing (..)
 import String
 
 

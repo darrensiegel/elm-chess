@@ -1,9 +1,9 @@
-module Chess.FEN exposing (toModel, initialBoard)
+module FEN exposing (toModel, initialBoard)
 
 -- Parses Forsythe Edwards Notation (FEN) representations
 -- of chess game state into Chess.GameModel instances
 
-import Chess.Core exposing (..)
+import Core exposing (..)
 import Array exposing (..)
 import String
 import Regex
