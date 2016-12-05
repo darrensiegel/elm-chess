@@ -31,7 +31,7 @@ function yields a computer player that is quite aggressive.
 
 ### Module `FEN`
 
-Model for parsing Forsyth-Edwards Notation. My original intent was to use FEN as the format for requests to the server. After
+Module for parsing Forsyth-Edwards Notation. My original intent was to use FEN as the format for requests to the server. After
 going completely client-side, I found FEN still useful for specifying initial starting boards for debugging and testing.
 
 ## Running from source
