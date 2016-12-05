@@ -45,7 +45,7 @@ $ elm-make source/Game.elm --output=elm.js
 And run it
 
 ```
-elm-reactor
+$ elm-reactor
 ```
 
 ## Feedback
