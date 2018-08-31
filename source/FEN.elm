@@ -1,12 +1,12 @@
-module FEN exposing (toModel, initialBoard)
+module FEN exposing (initialBoard, toModel)
 
 -- Parses Forsythe Edwards Notation (FEN) representations
 -- of chess game state into Chess.GameModel instances
 
-import Core exposing (..)
 import Array exposing (..)
+import Core exposing (..)
+import Regex exposing (..)
 import String
-import Regex
 
 
 startingBoard =
@@ -46,12 +46,17 @@ initialPieces =
 
 
 expandMatch { match } =
-    String.repeat (Result.withDefault 0 (String.toInt match)) " "
+    String.repeat (Maybe.withDefault 0 (String.toInt match)) " "
 
 
 expand : String -> String
 expand s =
-    Regex.replace Regex.All (Regex.regex "[12345678]") expandMatch s
+    case Regex.fromString "[12345678]" of
+        Nothing ->
+            s
+
+        Just regex ->
+            Regex.replace regex expandMatch s
 
 
 toPlacement : Char -> GameSquare
@@ -128,12 +133,12 @@ toModel fen =
             String.split " " fen
                 |> Array.fromList
     in
-        GameModel (parsePieces (Maybe.withDefault initialPieces (Array.get 0 parts)))
-            (maybeContains (Array.get 1 parts) "w")
-            (maybeContains (Array.get 2 parts) "Q")
-            (maybeContains (Array.get 2 parts) "K")
-            (maybeContains (Array.get 2 parts) "q")
-            (maybeContains (Array.get 2 parts) "k")
-            (Maybe.withDefault "-" (Array.get 3 parts))
-            (Result.withDefault 0 (String.toInt (Maybe.withDefault "0" (Array.get 4 parts))))
-            (Result.withDefault 1 (String.toInt (Maybe.withDefault "0" (Array.get 5 parts))))
+    GameModel (parsePieces (Maybe.withDefault initialPieces (Array.get 0 parts)))
+        (maybeContains (Array.get 1 parts) "w")
+        (maybeContains (Array.get 2 parts) "Q")
+        (maybeContains (Array.get 2 parts) "K")
+        (maybeContains (Array.get 2 parts) "q")
+        (maybeContains (Array.get 2 parts) "k")
+        (Maybe.withDefault "-" (Array.get 3 parts))
+        (Maybe.withDefault 0 (String.toInt (Maybe.withDefault "0" (Array.get 4 parts))))
+        (Maybe.withDefault 1 (String.toInt (Maybe.withDefault "0" (Array.get 5 parts))))

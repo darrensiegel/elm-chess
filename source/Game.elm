@@ -1,19 +1,23 @@
-module Game exposing (..)
+module Game exposing (Model, Msg(..), Point, appendMoveHistory, boardWithPieces, chooseImage, clearMoves, clearSelected, col, color, combine, determineMoves, executeEngine, filterCheckConstrained, init, isBlack, isEven, isOdd, main, moveHistory, onMouseUp, padList, pieceByCol, processMouseUp, processMove, px, renderBlankBoard, renderHighlight, renderPiece, renderPieces, renderPlacement, renderPotential, renderSelected, setSelected, squareSize, startEngine, subscriptions, tile, toChessPosition, toColor, toPoint, update, updateCheck, updateCheckMate, updateMovesForSelected, updateSquareClicked, view)
 
+import Array exposing (..)
+import Browser exposing (..)
+import Browser.Dom as Dom
+import Browser.Events as Events
+import Browser.Navigation as Nav
+import Core as Chess exposing (..)
+import Engine as Engine exposing (..)
+import FEN as FEN exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Core as Chess exposing (..)
-import Move as Move exposing (..)
-import FEN as FEN exposing (..)
-import SAN as SAN exposing (..)
-import Engine as Engine exposing (..)
-import Array exposing (..)
+import Html.Events.Extra.Mouse as Mouse
 import Json.Decode as Json exposing (..)
-import Mouse exposing (..)
-import Debug exposing (..)
+import Move as Move exposing (..)
+import SAN as SAN exposing (..)
 import Task exposing (..)
 import Time exposing (..)
+import Url exposing (Url)
 
 
 type alias Point =
@@ -34,38 +38,48 @@ type alias Model =
 
 
 type Msg
-    = SquareClicked Mouse.Position
+    = SquareClicked ( Float, Float )
     | StartEngine
     | ComputerMove (Maybe Move)
+    | ChangedUrl Url
+    | ClickedLink Browser.UrlRequest
 
 
 squareSize =
     64
 
 
-init : ( Model, Cmd Msg )
-init =
-    Model (FEN.toModel initialBoard) [] Nothing False False [] False ! []
+type alias Flags =
+    { gameState : String
+    }
+
+
+init : Flags -> Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url navKey =
+    ( Model (FEN.toModel initialBoard) [] Nothing False False [] False, Cmd.none )
 
 
 main =
-    Html.program
+    Browser.application
         { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
+        , onUrlChange = ChangedUrl
+        , onUrlRequest = ClickedLink
         }
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if ((not model.computerThinking && not model.game.whitesMove)) then
-        Time.every (millisecond * 50) startEngine
+    if not model.computerThinking && not model.game.whitesMove then
+        Time.every 50 startEngine
+
     else
         Sub.none
 
 
-startEngine : Time -> Msg
+startEngine : Posix -> Msg
 startEngine time =
     StartEngine
 
@@ -75,37 +89,39 @@ executeEngine model =
     Task.perform ComputerMove (Engine.nextMove model.game)
 
 
-
 updateSquareClicked : Chess.Position -> Model -> ( Model, Cmd Msg )
 updateSquareClicked position model =
     let
         nextModel =
             processMouseUp position model
     in
-        case nextModel.game.whitesMove of
-            False ->
-                ( nextModel, Cmd.none )
+    case nextModel.game.whitesMove of
+        False ->
+            ( nextModel, Cmd.none )
 
-            True ->
-                ( nextModel, Cmd.none )
+        True ->
+            ( nextModel, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SquareClicked position ->
-            updateSquareClicked (toChessPosition position) model
+            updateSquareClicked (fromFloatPair position) model
 
         StartEngine ->
-            { model | computerThinking = True } ! [ executeEngine model ]
+            ( { model | computerThinking = True }, executeEngine model )
 
         ComputerMove maybeMove ->
             case maybeMove of
                 Just ( srcPosition, destPosition ) ->
-                    processMove srcPosition destPosition model ! []
+                    ( processMove srcPosition destPosition model, Cmd.none )
 
                 Nothing ->
-                    { model | checkMate = True } ! []
+                    ( { model | checkMate = True }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 clearSelected : Model -> Model
@@ -123,9 +139,14 @@ clearMoves model =
     { model | potentialMoves = [] }
 
 
-toChessPosition : Mouse.Position -> Chess.Position
+toChessPosition : Position -> Chess.Position
 toChessPosition position =
     Chess.Position (position.x // squareSize) (position.y // squareSize)
+
+
+fromFloatPair : ( Float, Float ) -> Chess.Position
+fromFloatPair ( x, y ) =
+    Chess.Position (floor (x / squareSize)) (floor (y / squareSize))
 
 
 filterCheckConstrained : Player -> Chess.Position -> GameModel -> List Chess.Position -> List Chess.Position
@@ -137,7 +158,7 @@ determineMoves : Player -> Maybe Chess.Position -> GameSquare -> GameModel -> Li
 determineMoves player maybePosition gameSquare model =
     case maybePosition of
         Just position ->
-            (Move.validMoves position gameSquare model) |> (filterCheckConstrained player position model)
+            Move.validMoves position gameSquare model |> filterCheckConstrained player position model
 
         Nothing ->
             []
@@ -149,12 +170,12 @@ updateMovesForSelected model =
         maybeGameSquare =
             Move.getGameSquareMaybe model.selected model.game.board
     in
-        case maybeGameSquare of
-            Just gameSquare ->
-                { model | potentialMoves = determineMoves White model.selected gameSquare model.game }
+    case maybeGameSquare of
+        Just gameSquare ->
+            { model | potentialMoves = determineMoves White model.selected gameSquare model.game }
 
-            Nothing ->
-                clearMoves model
+        Nothing ->
+            clearMoves model
 
 
 updateCheckMate : Model -> Model
@@ -166,49 +187,49 @@ updateCheckMate model =
         blackMoves =
             List.length (Move.allAvailableMoves Black model.game)
     in
-        if (model.game.whitesMove && (whiteMoves == 0)) then
-            { model | checkMate = True }
-        else if (blackMoves == 0) then
-            { model | checkMate = True }
-        else
-            model
+    if model.game.whitesMove && (whiteMoves == 0) then
+        { model | checkMate = True }
+
+    else if blackMoves == 0 then
+        { model | checkMate = True }
+
+    else
+        model
 
 
 updateCheck : Model -> Model
 updateCheck model =
     let
         player =
-            if (model.game.whitesMove) then
+            if model.game.whitesMove then
                 White
+
             else
                 Black
     in
-        { model | checkMate = (Move.kingUnderAttack player model.game.board) }
+    { model | checkMate = Move.kingUnderAttack player model.game.board }
 
 
 appendMoveHistory : HalfMove -> Model -> Model
 appendMoveHistory halfMove model =
-    { model | moves = (model.moves ++ [ halfMove ]) }
+    { model | moves = model.moves ++ [ halfMove ] }
 
 
 processMove : Chess.Position -> Chess.Position -> Model -> Model
 processMove src dest model =
     let
-        log =
-            Debug.log "processMove" (posToString dest)
-
         updatedGameModel =
             updateGameModel ( src, dest ) model.game
 
         moveAsSAN =
             SAN.toHalfMove ( src, dest ) model.game
     in
-        { model | game = updatedGameModel, computerThinking = False }
-            |> clearSelected
-            |> clearMoves
-            |> updateCheckMate
-            |> updateCheck
-            |> (appendMoveHistory moveAsSAN)
+    { model | game = updatedGameModel, computerThinking = False }
+        |> clearSelected
+        |> clearMoves
+        |> updateCheckMate
+        |> updateCheck
+        |> appendMoveHistory moveAsSAN
 
 
 processMouseUp : Chess.Position -> Model -> Model
@@ -220,29 +241,15 @@ processMouseUp chessPosition model =
         potential =
             List.filter (\item -> item == chessPosition) model.potentialMoves
     in
-        case model.selected of
-            Just selectedValue ->
-                if chessPosition == selectedValue then
-                    clearSelected model |> clearMoves
-                else if (List.length potential == 1) then
-                    processMove selectedValue chessPosition model
-                else
-                    case gameSquare of
-                        Just squareValue ->
-                            case squareValue of
-                                Vacant ->
-                                    model
+    case model.selected of
+        Just selectedValue ->
+            if chessPosition == selectedValue then
+                clearSelected model |> clearMoves
 
-                                Occupied player piece ->
-                                    if player == White then
-                                        model |> (setSelected chessPosition) |> updateMovesForSelected
-                                    else
-                                        model
+            else if List.length potential == 1 then
+                processMove selectedValue chessPosition model
 
-                        Nothing ->
-                            model
-
-            Nothing ->
+            else
                 case gameSquare of
                     Just squareValue ->
                         case squareValue of
@@ -250,25 +257,51 @@ processMouseUp chessPosition model =
                                 model
 
                             Occupied player piece ->
-                                if (player == White) && model.game.whitesMove then
-                                    model |> (setSelected chessPosition) |> updateMovesForSelected
-                                else if (player == Black) && (not model.game.whitesMove) then
-                                    model |> (setSelected chessPosition) |> updateMovesForSelected
+                                if player == White then
+                                    model |> setSelected chessPosition |> updateMovesForSelected
+
                                 else
                                     model
 
                     Nothing ->
                         model
 
+        Nothing ->
+            case gameSquare of
+                Just squareValue ->
+                    case squareValue of
+                        Vacant ->
+                            model
+
+                        Occupied player piece ->
+                            if (player == White) && model.game.whitesMove then
+                                model |> setSelected chessPosition |> updateMovesForSelected
+
+                            else if (player == Black) && not model.game.whitesMove then
+                                model |> setSelected chessPosition |> updateMovesForSelected
+
+                            else
+                                model
+
+                Nothing ->
+                    model
+
 
 px : Int -> String
 px value =
-    (toString value) ++ "px"
+    String.fromInt value ++ "px"
 
 
 isBlack : Int -> Int -> Bool
 isBlack x y =
-    (rem (x + y) 2) == 0
+    let
+        total =
+            x + y
+
+        rem =
+            remainderBy 2 total
+    in
+    rem == 0
 
 
 color x y =
@@ -276,10 +309,11 @@ color x y =
         black =
             isBlack x y
     in
-        if (isBlack x y) then
-            "#D8A367"
-        else
-            "#E8E5E1"
+    if isBlack x y then
+        "#D8A367"
+
+    else
+        "#E8E5E1"
 
 
 tile : Int -> Int -> Html Msg
@@ -294,18 +328,16 @@ tile xPos yPos =
         backgroundColor =
             color xPos yPos
     in
-        div
-            [ onMouseUp
-            , style
-                [ "backgroundColor" => backgroundColor
-                , "width" => px squareSize
-                , "height" => px squareSize
-                , "position" => "absolute"
-                , "left" => xStr
-                , "top" => yStr
-                ]
-            ]
-            []
+    div
+        [ onMouseUp
+        , style "backgroundColor" backgroundColor
+        , style "width" (px squareSize)
+        , style "height" (px squareSize)
+        , style "position" "absolute"
+        , style "left" xStr
+        , style "top" yStr
+        ]
+        []
 
 
 col x =
@@ -323,24 +355,19 @@ renderHighlight colorStr borderStyle position =
     let
         point =
             toPoint position
-
-        borderWidth =
-            6
     in
-        div
-            [ onMouseUp
-            , style
-                [ "width" => px (squareSize - borderWidth)
-                , "height" => px (squareSize - borderWidth)
-                , "position" => "absolute"
-                , "left" => point.x
-                , "top" => point.y
-                , "borderStyle" => borderStyle
-                , "borderWidth" => toString borderWidth
-                , "borderColor" => colorStr
-                ]
-            ]
-            []
+    div
+        [ onMouseUp
+        , style "width" (px (squareSize - 6))
+        , style "height" (px (squareSize - 6))
+        , style "position" "absolute"
+        , style "left" point.x
+        , style "top" point.y
+        , style "borderStyle" borderStyle
+        , style "borderWidth" "6"
+        , style "borderColor" colorStr
+        ]
+        []
 
 
 renderBlankBoard =
@@ -360,49 +387,43 @@ toColor player =
 chooseImage player piece =
     case piece of
         Pawn ->
-            "images/" ++ toColor (player) ++ "p.png"
+            "images/" ++ toColor player ++ "p.png"
 
         Knight ->
-            "images/" ++ toColor (player) ++ "n.png"
+            "images/" ++ toColor player ++ "n.png"
 
         Bishop ->
-            "images/" ++ toColor (player) ++ "b.png"
+            "images/" ++ toColor player ++ "b.png"
 
         Rook ->
-            "images/" ++ toColor (player) ++ "r.png"
+            "images/" ++ toColor player ++ "r.png"
 
         Queen ->
-            "images/" ++ toColor (player) ++ "q.png"
+            "images/" ++ toColor player ++ "q.png"
 
         King ->
-            "images/" ++ toColor (player) ++ "k.png"
-
-
-(=>) =
-    (,)
+            "images/" ++ toColor player ++ "k.png"
 
 
 renderPiece player piece x y =
     let
         xPos =
-            (toString (x * squareSize)) ++ "px"
+            String.fromInt (x * squareSize) ++ "px"
 
         yPos =
-            (toString (y * squareSize)) ++ "px"
+            String.fromInt (y * squareSize) ++ "px"
     in
-        Html.img
-            [ onMouseUp
-            , Html.Attributes.src (chooseImage player piece)
-            , style
-                [ "cursor" => "grab"
-                , "width" => px squareSize
-                , "height" => px squareSize
-                , "position" => "absolute"
-                , "left" => xPos
-                , "top" => yPos
-                ]
-            ]
-            []
+    Html.img
+        [ onMouseUp
+        , Html.Attributes.src (chooseImage player piece)
+        , style "cursor" "grab"
+        , style "width" (px squareSize)
+        , style "height" (px squareSize)
+        , style "position" "absolute"
+        , style "left" xPos
+        , style "top" yPos
+        ]
+        []
 
 
 renderPlacement : Int -> Int -> GameSquare -> Html Msg
@@ -446,39 +467,40 @@ boardWithPieces model =
     let
         all =
             renderBlankBoard
-                ++ (renderSelected model.selected)
-                ++ (renderPotential model.potentialMoves)
-                ++ (renderPieces model.game.board)
+                ++ renderSelected model.selected
+                ++ renderPotential model.potentialMoves
+                ++ renderPieces model.game.board
     in
-        div []
-            all
+    div []
+        all
 
 
 onMouseUp : Attribute Msg
 onMouseUp =
-    on "mouseup" (Json.map SquareClicked Mouse.position)
+    Mouse.onUp (\e -> SquareClicked e.clientPos)
 
 
 padList : List HalfMove -> List HalfMove
 padList list =
     let
-        isOdd =
-            (rem (List.length list) 2 == 1)
+        odd =
+            remainderBy 2 (List.length list) == 1
     in
-        if (isOdd) then
-            list ++ [ "" ]
-        else
-            list
+    if odd then
+        list ++ [ "" ]
+
+    else
+        list
 
 
 isOdd : ( Int, HalfMove ) -> Bool
 isOdd ( i, h ) =
-    (rem i 2 == 1)
+    remainderBy 2 i == 1
 
 
 isEven : ( Int, HalfMove ) -> Bool
 isEven ( i, h ) =
-    (rem i 2 == 0)
+    remainderBy 2 i == 0
 
 
 combine : ( Int, HalfMove ) -> ( Int, HalfMove ) -> Html Msg
@@ -489,35 +511,43 @@ combine ( _, a ) ( _, b ) =
 moveHistory : Model -> Html Msg
 moveHistory model =
     let
+        toTuple i m =
+            ( i, m )
+
         paddedList =
             padList model.moves
 
         whiteMoves =
-            (List.filter isOdd (List.indexedMap (,) paddedList))
+            List.filter isOdd (List.indexedMap toTuple paddedList)
 
         blackMoves =
-            (List.filter isEven (List.indexedMap (,) paddedList))
+            List.filter isEven (List.indexedMap toTuple paddedList)
 
         items =
             List.map2 combine whiteMoves blackMoves
     in
-        div
-            [ style
-                [ "position" => "absolute"
-                , "left" => "520px"
-                , "top" => "20px"
+    div
+        [ style "position" "absolute"
+        , style "left" "520px"
+        , style "top" "20px"
+        ]
+        [ ol
+            []
+            items
+        ]
+
+
+view : Model -> Document Msg
+view model =
+    let
+        body =
+            [ div
+                []
+                [ boardWithPieces model
+                , moveHistory model
                 ]
             ]
-            [ ol
-                []
-                items
-            ]
-
-
-view : Model -> Html Msg
-view model =
-    div
-        []
-        [ (boardWithPieces model)
-        , (moveHistory model)
-        ]
+    in
+    { title = "Elm Chess"
+    , body = body
+    }

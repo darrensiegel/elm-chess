@@ -1,9 +1,9 @@
-module Move exposing (..)
+module Move exposing (MoveFunc, allAttackFree, allAvailableMoves, applyMove, bishopMovements, bishopPositions, checkEnPassant, checkForAttacks, dropMaybe, dumpItem, dumpList, emptyPosition, facesAttackFrom, fromAlgebraic, getGameSquare, getGameSquareByRow, getGameSquareMaybe, handleCastling, handleEnPassantCapture, handlePawnPromotions, identity, isOpponentPiece, isVacant, kingMoves, kingPositions, kingUnderAttack, knightMoves, knightPositions, lazilyWalkDirection, logList, maybeAppend, moveE, moveIntroducesCheck, moveN, moveNE, moveNW, moveS, moveSE, moveSW, moveW, occupiedByPlayer, opponent, pawnPositionHelper, pawnPositions, posToString, processKingCastle, processQueenCastle, queenMovements, queenPositions, removeNothing, rookMovements, rookPositions, setAdjacentSquare, setGameSquare, setVacant, toAlgebraic, toggleWhitesMove, updateBlackCastle, updateBoard, updateEnPassant, updateFullMove, updateGameModel, updateHalfMove, updateWhiteCastle, updateWhitesMove, validMoves, validMovesFromTuple, validMovesPerPiece, validateAttackPosition, validateEmptyPosition, validatePosition, validatePositionRow, walk, walkDirection)
 
-import Find exposing (..)
-import Core exposing (..)
 import Array exposing (Array)
 import Char exposing (..)
+import Core exposing (..)
+import Find exposing (..)
 
 
 type alias MoveFunc =
@@ -77,14 +77,14 @@ validatePosition : Position -> Board -> Maybe Position
 validatePosition position board =
     let
         col =
-            (Array.get position.y board)
+            Array.get position.y board
     in
-        case col of
-            Just value ->
-                (validatePositionRow (getGameSquareByRow position.x value) position)
+    case col of
+        Just value ->
+            validatePositionRow (getGameSquareByRow position.x value) position
 
-            Nothing ->
-                Nothing
+        Nothing ->
+            Nothing
 
 
 getGameSquareMaybe : Maybe Position -> Board -> Maybe GameSquare
@@ -101,14 +101,14 @@ getGameSquare : Position -> Board -> Maybe GameSquare
 getGameSquare position board =
     let
         col =
-            (Array.get position.y board)
+            Array.get position.y board
     in
-        case col of
-            Just value ->
-                getGameSquareByRow position.x value
+    case col of
+        Just value ->
+            getGameSquareByRow position.x value
 
-            Nothing ->
-                Nothing
+        Nothing ->
+            Nothing
 
 
 occupiedByPlayer : Player -> Position -> Board -> Bool
@@ -117,20 +117,20 @@ occupiedByPlayer p position board =
         maybeSquare =
             getGameSquare position board
     in
-        case maybeSquare of
-            Just Vacant ->
-                False
+    case maybeSquare of
+        Just Vacant ->
+            False
 
-            Just value ->
-                case value of
-                    Vacant ->
-                        False
+        Just value ->
+            case value of
+                Vacant ->
+                    False
 
-                    Occupied player piece ->
-                        p == player
+                Occupied player piece ->
+                    p == player
 
-            Nothing ->
-                False
+        Nothing ->
+            False
 
 
 emptyPosition : Position -> Board -> Bool
@@ -139,12 +139,12 @@ emptyPosition position board =
         maybeSquare =
             getGameSquare position board
     in
-        case maybeSquare of
-            Just Vacant ->
-                True
+    case maybeSquare of
+        Just Vacant ->
+            True
 
-            _ ->
-                False
+        _ ->
+            False
 
 
 validateAttackPosition : Player -> Board -> Position -> Maybe Position
@@ -153,21 +153,23 @@ validateAttackPosition player board position =
         p =
             validatePosition position board
 
-        opponent =
+        theOpponent =
             if player == White then
                 Black
+
             else
                 White
     in
-        case p of
-            Just value ->
-                if occupiedByPlayer opponent value board then
-                    p
-                else
-                    Nothing
+    case p of
+        Just value ->
+            if occupiedByPlayer theOpponent value board then
+                p
 
-            Nothing ->
+            else
                 Nothing
+
+        Nothing ->
+            Nothing
 
 
 validateEmptyPosition : Board -> Position -> Maybe Position
@@ -176,15 +178,16 @@ validateEmptyPosition board position =
         p =
             validatePosition position board
     in
-        case p of
-            Just value ->
-                if emptyPosition value board then
-                    p
-                else
-                    Nothing
+    case p of
+        Just value ->
+            if emptyPosition value board then
+                p
 
-            Nothing ->
+            else
                 Nothing
+
+        Nothing ->
+            Nothing
 
 
 maybeAppend : Maybe Position -> List Position -> List Position
@@ -201,6 +204,7 @@ opponent : Player -> Player
 opponent player =
     if player == White then
         Black
+
     else
         White
 
@@ -215,17 +219,17 @@ fromAlgebraic str =
         value =
             String.uncons str
     in
-        case value of
-            Just ( c, row ) ->
-                Position (97 - (Char.toCode c)) (8 - (Result.withDefault -1 (String.toInt row)))
+    case value of
+        Just ( c, row ) ->
+            Position (97 - Char.toCode c) (8 - Maybe.withDefault -1 (String.toInt row))
 
-            _ ->
-                Position -1 -1
+        _ ->
+            Position -1 -1
 
 
 toAlgebraic : Position -> String
 toAlgebraic position =
-    String.cons (Char.fromCode (97 + position.x)) (toString (8 - position.y))
+    String.cons (Char.fromCode (97 + position.x)) (String.fromInt (8 - position.y))
 
 
 checkEnPassant : Position -> Position -> Position -> Board -> Maybe Position
@@ -234,10 +238,11 @@ checkEnPassant position1 position2 enPassantPosition board =
         canAttack =
             (position1 == enPassantPosition) || (position2 == enPassantPosition)
     in
-        if canAttack then
-            validateEmptyPosition board enPassantPosition
-        else
-            Nothing
+    if canAttack then
+        validateEmptyPosition board enPassantPosition
+
+    else
+        Nothing
 
 
 pawnPositionHelper : Int -> Int -> Player -> Position -> GameModel -> List Position
@@ -253,8 +258,9 @@ pawnPositionHelper y originalY player position model =
             validateEmptyPosition model.board (Position position.x (position.y + y))
 
         two =
-            if (position.y == originalY) && (emptyPosition (Position position.x (position.y + y)) model.board) then
+            if (position.y == originalY) && emptyPosition (Position position.x (position.y + y)) model.board then
                 validateEmptyPosition model.board (Position position.x (position.y + (y * 2)))
+
             else
                 Nothing
 
@@ -264,7 +270,7 @@ pawnPositionHelper y originalY player position model =
                 (fromAlgebraic model.enPassant)
                 model.board
     in
-        maybeAppend attack1 [] |> maybeAppend attack2 |> maybeAppend one |> maybeAppend two |> maybeAppend enPassant
+    maybeAppend attack1 [] |> maybeAppend attack2 |> maybeAppend one |> maybeAppend two |> maybeAppend enPassant
 
 
 pawnPositions : Player -> Position -> GameModel -> List Position
@@ -273,16 +279,18 @@ pawnPositions player position model =
         y =
             if player == White then
                 -1
+
             else
                 1
 
         originalY =
             if player == White then
                 6
+
             else
                 1
     in
-        pawnPositionHelper y originalY player position model
+    pawnPositionHelper y originalY player position model
 
 
 rookPositions : Player -> Position -> GameModel -> List Position
@@ -291,7 +299,7 @@ rookPositions player position model =
         moves =
             List.map (walk player position model.board []) rookMovements
     in
-        List.concat moves
+    List.concat moves
 
 
 bishopPositions : Player -> Position -> GameModel -> List Position
@@ -300,7 +308,7 @@ bishopPositions player position model =
         moves =
             List.map (walk player position model.board []) bishopMovements
     in
-        List.concat moves
+    List.concat moves
 
 
 queenPositions : Player -> Position -> GameModel -> List Position
@@ -309,7 +317,7 @@ queenPositions player position model =
         moves =
             List.map (walk player position model.board []) queenMovements
     in
-        List.concat moves
+    List.concat moves
 
 
 identity maybe =
@@ -343,17 +351,17 @@ isVacant ( position, gameSquare ) =
             False
 
 
-
-
 allAttackFree : Player -> Position -> Position -> Position -> Board -> Bool
 allAttackFree player one two three board =
-  if (not (checkForAttacks player one board)) then
-    if (not (checkForAttacks player two board)) then
-      not (checkForAttacks player three board)
+    if not (checkForAttacks player one board) then
+        if not (checkForAttacks player two board) then
+            not (checkForAttacks player three board)
+
+        else
+            False
+
     else
-      False
-  else
-    False
+        False
 
 
 processQueenCastle : Player -> Position -> GameModel -> List Position
@@ -362,16 +370,20 @@ processQueenCastle player position model =
         intermediateSquaresVacant =
             List.all isVacant (findPiecesBy (queenSidePredicate position) model.board)
 
-        one = position
+        one =
+            position
 
-        two = Position (position.x - 1) position.y
+        two =
+            Position (position.x - 1) position.y
 
-        three = Position (position.x - 2) position.y
+        three =
+            Position (position.x - 2) position.y
     in
-        if intermediateSquaresVacant && (allAttackFree player one two three model.board) then
-            [ Position (position.x - 2) position.y ]
-        else
-            []
+    if intermediateSquaresVacant && allAttackFree player one two three model.board then
+        [ Position (position.x - 2) position.y ]
+
+    else
+        []
 
 
 processKingCastle : Player -> Position -> GameModel -> List Position
@@ -380,16 +392,20 @@ processKingCastle player position model =
         intermediateSquaresVacant =
             List.all isVacant (findPiecesBy (kingSidePredicate position) model.board)
 
-        one = position
+        one =
+            position
 
-        two = Position (position.x + 1) position.y
+        two =
+            Position (position.x + 1) position.y
 
-        three = Position (position.x + 2) position.y
+        three =
+            Position (position.x + 2) position.y
     in
-        if intermediateSquaresVacant && (allAttackFree player one two three model.board) then
-            [ Position (position.x + 2) position.y ]
-        else
-            []
+    if intermediateSquaresVacant && allAttackFree player one two three model.board then
+        [ Position (position.x + 2) position.y ]
+
+    else
+        []
 
 
 kingPositions : Player -> Position -> GameModel -> List Position
@@ -402,29 +418,33 @@ kingPositions player position model =
             List.map (validateEmptyPosition model.board) (kingMoves position)
 
         queenSideCastle =
-            if (player == Black) then
+            if player == Black then
                 model.blackQueenCastle
+
             else
                 model.whiteQueenCastle
 
         kingSideCastle =
-            if (player == Black) then
+            if player == Black then
                 model.blackKingCastle
+
             else
                 model.whiteKingCastle
     in
-        (removeNothing attackMoves)
-            ++ (removeNothing emptyMoves)
-            ++ (if queenSideCastle then
-                    processQueenCastle player position model
-                else
-                    []
-               )
-            ++ (if kingSideCastle then
-                    processKingCastle player position model
-                else
-                    []
-               )
+    removeNothing attackMoves
+        ++ removeNothing emptyMoves
+        ++ (if queenSideCastle then
+                processQueenCastle player position model
+
+            else
+                []
+           )
+        ++ (if kingSideCastle then
+                processKingCastle player position model
+
+            else
+                []
+           )
 
 
 knightMoves position =
@@ -448,7 +468,7 @@ knightPositions player position { board } =
         emptyMoves =
             List.map (validateEmptyPosition board) (knightMoves position)
     in
-        (removeNothing attackMoves) ++ (removeNothing emptyMoves)
+    removeNothing attackMoves ++ removeNothing emptyMoves
 
 
 walk : Player -> Position -> Board -> List Position -> MoveFunc -> List Position
@@ -460,20 +480,21 @@ walk player position board accum moveFunc =
         maybeSquare =
             getGameSquare (moveFunc position) board
     in
-        case maybeSquare of
-            Just value ->
-                case value of
-                    Vacant ->
-                        walk player nextPosition board (accum ++ [ nextPosition ]) moveFunc
+    case maybeSquare of
+        Just value ->
+            case value of
+                Vacant ->
+                    walk player nextPosition board (accum ++ [ nextPosition ]) moveFunc
 
-                    Occupied consideringPlayer piece ->
-                        if (consideringPlayer == (opponent player)) then
-                            accum ++ [ nextPosition ]
-                        else
-                            accum
+                Occupied consideringPlayer piece ->
+                    if consideringPlayer == opponent player then
+                        accum ++ [ nextPosition ]
 
-            Nothing ->
-                accum
+                    else
+                        accum
+
+        Nothing ->
+            accum
 
 
 setGameSquare : Position -> GameSquare -> Board -> Board
@@ -482,21 +503,21 @@ setGameSquare position gameSquare board =
         maybeColumn =
             Array.get position.y board
     in
-        case maybeColumn of
-            Just column ->
-                let
-                    maybeSquare =
-                        Array.get position.x column
-                in
-                    case maybeSquare of
-                        Just destSquare ->
-                            Array.set position.y (Array.set position.x gameSquare column) board
+    case maybeColumn of
+        Just column ->
+            let
+                maybeSquare =
+                    Array.get position.x column
+            in
+            case maybeSquare of
+                Just destSquare ->
+                    Array.set position.y (Array.set position.x gameSquare column) board
 
-                        Nothing ->
-                            board
+                Nothing ->
+                    board
 
-            Nothing ->
-                board
+        Nothing ->
+            board
 
 
 applyMove : Position -> Position -> Board -> Board
@@ -505,17 +526,17 @@ applyMove src dest board =
         maybeSrcSquare =
             getGameSquare src board
     in
-        case maybeSrcSquare of
-            Just gameSquare ->
-                (setGameSquare dest gameSquare board) |> (setGameSquare src Vacant)
+    case maybeSrcSquare of
+        Just gameSquare ->
+            setGameSquare dest gameSquare board |> setGameSquare src Vacant
 
-            Nothing ->
-                board
+        Nothing ->
+            board
 
 
 posToString : Position -> String
 posToString position =
-    ((toString position.x) ++ " " ++ (toString position.y))
+    String.fromInt position.x ++ " " ++ String.fromInt position.y
 
 
 logList : List Position -> List Position
@@ -524,7 +545,7 @@ logList list =
         log =
             List.map (\n -> Debug.log "move" (posToString n)) list
     in
-        list
+    list
 
 
 walkDirection : Player -> Piece -> Position -> Board -> MoveFunc -> Bool
@@ -536,26 +557,28 @@ walkDirection player piece position board moveFunc =
         maybeSquare =
             getGameSquare (moveFunc position) board
     in
-        case maybeSquare of
-            Just value ->
-                case value of
-                    Vacant ->
-                        walkDirection player piece nextPosition board moveFunc
+    case maybeSquare of
+        Just value ->
+            case value of
+                Vacant ->
+                    walkDirection player piece nextPosition board moveFunc
 
-                    Occupied consideringPlayer pce ->
-                        if (consideringPlayer == (opponent player)) && pce == piece then
-                            True
-                        else
-                            False
+                Occupied consideringPlayer pce ->
+                    if (consideringPlayer == opponent player) && pce == piece then
+                        True
 
-            Nothing ->
-                False
+                    else
+                        False
+
+        Nothing ->
+            False
 
 
 lazilyWalkDirection : Player -> Piece -> Position -> Board -> MoveFunc -> Bool -> Bool
 lazilyWalkDirection player piece position board moveFunc lastEval =
     if lastEval then
         True
+
     else
         walkDirection player piece position board moveFunc
 
@@ -570,32 +593,33 @@ checkForAttacks player position board =
         yDirection =
             if player == White then
                 -1
+
             else
                 1
     in
-        ((List.map (isOpponentPiece player Knight board) (knightMoves position)) |> List.any (\v -> v))
-            || ((isOpponentPiece player Pawn board (Position (position.x - 1) (position.y + yDirection)))
-                    || (isOpponentPiece player Pawn board (Position (position.x + 1) (position.y + yDirection)))
-               )
-            || ((List.map (isOpponentPiece player King board) (kingMoves position)) |> List.any (\v -> v))
-            || facesAttackFrom player Rook rookMovements position board
-            || facesAttackFrom player Bishop bishopMovements position board
-            || facesAttackFrom player Queen queenMovements position board
+    (List.map (isOpponentPiece player Knight board) (knightMoves position) |> List.any (\v -> v))
+        || (isOpponentPiece player Pawn board (Position (position.x - 1) (position.y + yDirection))
+                || isOpponentPiece player Pawn board (Position (position.x + 1) (position.y + yDirection))
+           )
+        || (List.map (isOpponentPiece player King board) (kingMoves position) |> List.any (\v -> v))
+        || facesAttackFrom player Rook rookMovements position board
+        || facesAttackFrom player Bishop bishopMovements position board
+        || facesAttackFrom player Queen queenMovements position board
 
 
 kingUnderAttack : Player -> Board -> Bool
 kingUnderAttack player board =
     let
         maybeKing =
-            (findPiecesBy (byPlayerPiecePredicate player King) board)
+            findPiecesBy (byPlayerPiecePredicate player King) board
                 |> List.head
     in
-        case maybeKing of
-            Just ( position, gameSquare ) ->
-                checkForAttacks player position board
+    case maybeKing of
+        Just ( position, gameSquare ) ->
+            checkForAttacks player position board
 
-            Nothing ->
-                False
+        Nothing ->
+            False
 
 
 isOpponentPiece : Player -> Piece -> Board -> Position -> Bool
@@ -607,17 +631,17 @@ isOpponentPiece player piece board position =
         maybeGameSquare =
             getGameSquare position board
     in
-        case maybeGameSquare of
-            Just gameSquare ->
-                case gameSquare of
-                    Occupied plr pce ->
-                        (plr == other) && (pce == piece)
+    case maybeGameSquare of
+        Just gameSquare ->
+            case gameSquare of
+                Occupied plr pce ->
+                    (plr == other) && (pce == piece)
 
-                    _ ->
-                        False
+                _ ->
+                    False
 
-            Nothing ->
-                False
+        Nothing ->
+            False
 
 
 
@@ -631,7 +655,7 @@ moveIntroducesCheck src dest playerInCheck gameModel =
         updatedBoard =
             applyMove src dest gameModel.board
     in
-        kingUnderAttack playerInCheck updatedBoard
+    kingUnderAttack playerInCheck updatedBoard
 
 
 validMovesFromTuple : GameModel -> ( Position, GameSquare ) -> List Position
@@ -640,7 +664,7 @@ validMovesFromTuple model tuple =
         ( position, gameSquare ) =
             tuple
     in
-        validMoves position gameSquare model
+    validMoves position gameSquare model
 
 
 validMovesPerPiece : GameModel -> ( Position, GameSquare ) -> List ( Position, Position )
@@ -649,8 +673,8 @@ validMovesPerPiece model tuple =
         ( position, gameSquare ) =
             tuple
     in
-        validMoves position gameSquare model
-            |> List.map (\dest -> ( position, dest ))
+    validMoves position gameSquare model
+        |> List.map (\dest -> ( position, dest ))
 
 
 dumpItem : ( Position, GameSquare ) -> String
@@ -697,16 +721,16 @@ dumpItem ( position, gameSquare ) =
                 Occupied Black Knight ->
                     "BN"
     in
-        "(" ++ posToString position ++ " " ++ g ++ ")  "
+    "(" ++ posToString position ++ " " ++ g ++ ")  "
 
 
 dumpList : List ( Position, GameSquare ) -> List ( Position, GameSquare )
 dumpList list =
     let
         v =
-            (List.map dumpItem list) |> List.foldr (++) ""
+            List.map dumpItem list |> List.foldr (++) ""
     in
-        list
+    list
 
 
 allAvailableMoves : Player -> GameModel -> List ( Position, Position )
@@ -715,9 +739,9 @@ allAvailableMoves player model =
         pieces =
             findPiecesBy (piecesByPlayerPredicate player) model.board
     in
-        List.map (validMovesPerPiece model) pieces
-            |> List.concat
-            |> List.filter (\( src, dest ) -> not (moveIntroducesCheck src dest player model))
+    List.map (validMovesPerPiece model) pieces
+        |> List.concat
+        |> List.filter (\( src, dest ) -> not (moveIntroducesCheck src dest player model))
 
 
 validMoves : Position -> GameSquare -> GameModel -> List Position
@@ -772,19 +796,19 @@ updateGameModel ( src, dest ) model =
             getGameSquare src model.board |> dropMaybe
 
         updatedBoard =
-            (setGameSquare dest srcSquare model.board)
-                |> (setGameSquare src Vacant)
+            setGameSquare dest srcSquare model.board
+                |> setGameSquare src Vacant
     in
-        (updateBoard updatedBoard model)
-            |> toggleWhitesMove
-            |> (updateHalfMove srcSquare destSquare)
-            |> (updateFullMove srcSquare)
-            |> (updateWhiteCastle src srcSquare)
-            |> (updateBlackCastle src srcSquare)
-            |> (updateEnPassant src dest srcSquare)
-            |> (handlePawnPromotions dest srcSquare)
-            |> (handleEnPassantCapture dest srcSquare model.enPassant)
-            |> (handleCastling src dest srcSquare)
+    updateBoard updatedBoard model
+        |> toggleWhitesMove
+        |> updateHalfMove srcSquare destSquare
+        |> updateFullMove srcSquare
+        |> updateWhiteCastle src srcSquare
+        |> updateBlackCastle src srcSquare
+        |> updateEnPassant src dest srcSquare
+        |> handlePawnPromotions dest srcSquare
+        |> handleEnPassantCapture dest srcSquare model.enPassant
+        |> handleCastling src dest srcSquare
 
 
 updateHalfMove : GameSquare -> GameSquare -> GameModel -> GameModel
@@ -806,10 +830,11 @@ updateHalfMove src dest model =
                 _ ->
                     False
     in
-        if (capture || pawnMove) then
-            { model | halfMove = 0 }
-        else
-            { model | halfMove = model.halfMove + 1 }
+    if capture || pawnMove then
+        { model | halfMove = 0 }
+
+    else
+        { model | halfMove = model.halfMove + 1 }
 
 
 updateFullMove : GameSquare -> GameModel -> GameModel
@@ -823,10 +848,11 @@ updateFullMove src model =
                 _ ->
                     False
     in
-        if (blackMoved) then
-            { model | fullMove = model.fullMove + 1 }
-        else
-            model
+    if blackMoved then
+        { model | fullMove = model.fullMove + 1 }
+
+    else
+        model
 
 
 updateWhitesMove : GameSquare -> GameModel -> GameModel
@@ -840,7 +866,7 @@ updateWhitesMove src model =
                 _ ->
                     False
     in
-        { model | whitesMove = blackMoved }
+    { model | whitesMove = blackMoved }
 
 
 updateBlackCastle : Position -> GameSquare -> GameModel -> GameModel
@@ -857,23 +883,28 @@ updateBlackCastle position gameSquare model =
         queenRookMoved =
             if (position.x == 0) && (position.y == 0) then
                 True
+
             else
                 False
 
         kingRookMoved =
             if (position.x == 7) && (position.y == 0) then
                 True
+
             else
                 False
     in
-        if kingMoved then
-            { model | blackQueenCastle = False, blackKingCastle = False }
-        else if queenRookMoved then
-            { model | blackQueenCastle = False }
-        else if kingRookMoved then
-            { model | blackKingCastle = False }
-        else
-            model
+    if kingMoved then
+        { model | blackQueenCastle = False, blackKingCastle = False }
+
+    else if queenRookMoved then
+        { model | blackQueenCastle = False }
+
+    else if kingRookMoved then
+        { model | blackKingCastle = False }
+
+    else
+        model
 
 
 updateWhiteCastle : Position -> GameSquare -> GameModel -> GameModel
@@ -890,40 +921,46 @@ updateWhiteCastle position gameSquare model =
         queenRookMoved =
             if (position.x == 0) && (position.y == 7) then
                 True
+
             else
                 False
 
         kingRookMoved =
             if (position.x == 7) && (position.y == 7) then
                 True
+
             else
                 False
     in
-        if kingMoved then
-            { model | whiteQueenCastle = False, whiteKingCastle = False }
-        else if queenRookMoved then
-            { model | whiteQueenCastle = False }
-        else if kingRookMoved then
-            { model | whiteKingCastle = False }
-        else
-            model
+    if kingMoved then
+        { model | whiteQueenCastle = False, whiteKingCastle = False }
+
+    else if queenRookMoved then
+        { model | whiteQueenCastle = False }
+
+    else if kingRookMoved then
+        { model | whiteKingCastle = False }
+
+    else
+        model
 
 
 updateEnPassant : Position -> Position -> GameSquare -> GameModel -> GameModel
 updateEnPassant src dest gameSquare model =
     let
         twoMove =
-            (abs (dest.y - src.y) == 2)
+            abs (dest.y - src.y) == 2
     in
-        if twoMove then
-            case gameSquare of
-                Occupied _ Pawn ->
-                    { model | enPassant = (toAlgebraic dest) }
+    if twoMove then
+        case gameSquare of
+            Occupied _ Pawn ->
+                { model | enPassant = toAlgebraic dest }
 
-                _ ->
-                    { model | enPassant = "-" }
-        else
-            { model | enPassant = "-" }
+            _ ->
+                { model | enPassant = "-" }
+
+    else
+        { model | enPassant = "-" }
 
 
 handlePawnPromotions : Position -> GameSquare -> GameModel -> GameModel
@@ -932,40 +969,42 @@ handlePawnPromotions position gameSquare model =
         lastRank =
             (position.y == 0) || (position.y == 7)
     in
-        if lastRank then
-            case gameSquare of
-                Occupied player Pawn ->
-                    case player of
-                        White ->
-                            { model | board = (setGameSquare position (Occupied White Queen) model.board) }
+    if lastRank then
+        case gameSquare of
+            Occupied player Pawn ->
+                case player of
+                    White ->
+                        { model | board = setGameSquare position (Occupied White Queen) model.board }
 
-                        Black ->
-                            { model | board = (setGameSquare position (Occupied Black Queen) model.board) }
+                    Black ->
+                        { model | board = setGameSquare position (Occupied Black Queen) model.board }
 
-                _ ->
-                    model
-        else
-            model
+            _ ->
+                model
+
+    else
+        model
 
 
 handleEnPassantCapture : Position -> GameSquare -> String -> GameModel -> GameModel
 handleEnPassantCapture position gameSquare enPassant model =
     let
         nowOccupied =
-            (fromAlgebraic enPassant) == position
+            fromAlgebraic enPassant == position
     in
-        if nowOccupied then
-            case gameSquare of
-                Occupied White Pawn ->
-                    { model | board = (setGameSquare (Position position.x (position.y + 1)) Vacant model.board) }
+    if nowOccupied then
+        case gameSquare of
+            Occupied White Pawn ->
+                { model | board = setGameSquare (Position position.x (position.y + 1)) Vacant model.board }
 
-                Occupied Black Pawn ->
-                    { model | board = (setGameSquare (Position position.x (position.y - 1)) Vacant model.board) }
+            Occupied Black Pawn ->
+                { model | board = setGameSquare (Position position.x (position.y - 1)) Vacant model.board }
 
-                _ ->
-                    model
-        else
-            model
+            _ ->
+                model
+
+    else
+        model
 
 
 setVacant : Player -> Int -> Board -> Board
@@ -974,10 +1013,11 @@ setVacant player file board =
         y =
             if player == Black then
                 0
+
             else
                 7
     in
-        setGameSquare (Position file y) Vacant board
+    setGameSquare (Position file y) Vacant board
 
 
 setAdjacentSquare : Int -> Position -> GameSquare -> Board -> Board
@@ -995,25 +1035,27 @@ handleCastling src dest gameSquare model =
             abs (dest.x - src.x)
 
         opposite =
-            (-1 * xDiff // 2)
+            -1 * xDiff // 2
 
         rook =
             if xDiff < 0 then
                 0
+
             else
                 7
     in
-        if (absDiff == 2) then
-            case gameSquare of
-                Occupied player King ->
-                    { model | board = (setVacant player rook (setAdjacentSquare opposite dest (Occupied player Rook) model.board)) }
+    if absDiff == 2 then
+        case gameSquare of
+            Occupied player King ->
+                { model | board = setVacant player rook (setAdjacentSquare opposite dest (Occupied player Rook) model.board) }
 
-                _ ->
-                    model
-        else
-            model
+            _ ->
+                model
+
+    else
+        model
 
 
 toggleWhitesMove : GameModel -> GameModel
 toggleWhitesMove model =
-    { model | whitesMove = (not model.whitesMove) }
+    { model | whitesMove = not model.whitesMove }

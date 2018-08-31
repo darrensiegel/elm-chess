@@ -1,11 +1,11 @@
 module Eval exposing (eval)
 
-import Find exposing (..)
-import Core exposing (..)
-import Move as Move exposing (..)
 import Array exposing (Array)
-import Task exposing (..)
+import Core exposing (..)
+import Find exposing (..)
+import Move as Move exposing (..)
 import Set exposing (..)
+import Task exposing (..)
 
 
 type alias File =
@@ -29,12 +29,12 @@ pieceFactor =
 
 
 evaluators =
-    [ ( pieceDiff King, (500.0 * pieceFactor) )
-    , ( pieceDiff Queen, (9.0 * pieceFactor) )
-    , ( pieceDiff Rook, (5.0 * pieceFactor) )
-    , ( pieceDiff Bishop, (3.0 * pieceFactor) )
-    , ( pieceDiff Knight, (3.0 * pieceFactor) )
-    , ( pieceDiff Pawn, (1.0 * pieceFactor) )
+    [ ( pieceDiff King, 500.0 * pieceFactor )
+    , ( pieceDiff Queen, 9.0 * pieceFactor )
+    , ( pieceDiff Rook, 5.0 * pieceFactor )
+    , ( pieceDiff Bishop, 3.0 * pieceFactor )
+    , ( pieceDiff Knight, 3.0 * pieceFactor )
+    , ( pieceDiff Pawn, 1.0 * pieceFactor )
     , ( mobility, 0.1 )
     , ( space, 0.1 )
     , ( doubledPawns, -0.5 )
@@ -51,7 +51,7 @@ eval model =
 
 execute : Player -> Player -> GameModel -> Moves -> Moves -> Evaluator -> Float
 execute player1 player2 model player1Moves player2Moves ( evaluatorFunc, weight ) =
-    weight * ((evaluatorFunc player1 model player1Moves) - (evaluatorFunc player2 model player2Moves))
+    weight * (evaluatorFunc player1 model player1Moves - evaluatorFunc player2 model player2Moves)
 
 
 performEval : GameModel -> Float
@@ -69,8 +69,8 @@ performEval model =
         opponentMoves =
             Move.allAvailableMoves player2 model
     in
-        List.map (execute player1 player2 model availableMoves opponentMoves) evaluators
-            |> List.foldr (+) 0.0
+    List.map (execute player1 player2 model availableMoves opponentMoves) evaluators
+        |> List.foldr (+) 0.0
 
 
 centerPredicate : Player -> ( Position, GameSquare ) -> Bool
@@ -79,21 +79,21 @@ centerPredicate player tuple =
         ( position, gameSquare ) =
             tuple
     in
-        case gameSquare of
-            Occupied player _ ->
-                (position.x == 3 || position.x == 4) && (position.y == 3 || position.y == 4)
+    case gameSquare of
+        Occupied p _ ->
+            (position.x == 3 || position.x == 4) && (position.y == 3 || position.y == 4)
 
-            _ ->
-                False
+        _ ->
+            False
 
 
 center : Player -> GameModel -> Moves -> Float
 center player model moves =
     let
         playerInCenter =
-            (findPiecesBy (centerPredicate player) model.board) |> List.length
+            findPiecesBy (centerPredicate player) model.board |> List.length
     in
-        toFloat playerInCenter
+    toFloat playerInCenter
 
 
 occupiedBy : Player -> Board -> Position -> Maybe Position
@@ -102,20 +102,21 @@ occupiedBy player board position =
         maybeGameSquare =
             Move.getGameSquare position board
     in
-        case maybeGameSquare of
-            Just value ->
-                case value of
-                    Occupied p _ ->
-                        if (p == player) then
-                            Just position
-                        else
-                            Nothing
+    case maybeGameSquare of
+        Just value ->
+            case value of
+                Occupied p _ ->
+                    if p == player then
+                        Just position
 
-                    _ ->
+                    else
                         Nothing
 
-            Nothing ->
-                Nothing
+                _ ->
+                    Nothing
+
+        Nothing ->
+            Nothing
 
 
 threats : Player -> GameModel -> Moves -> Float
@@ -134,7 +135,7 @@ yComparison a b =
         ( posB, sqB ) =
             b
     in
-        compare posA.y posB.y
+    compare posA.y posB.y
 
 
 file : GameModel -> Int -> File
@@ -159,12 +160,12 @@ onlyPawns player tuple =
         ( _, gameSquare ) =
             tuple
     in
-        case gameSquare of
-            Occupied player Pawn ->
-                True
+    case gameSquare of
+        Occupied _ Pawn ->
+            True
 
-            _ ->
-                False
+        _ ->
+            False
 
 
 hasDoubledPawn : Int -> GameModel -> Player -> ( Position, GameSquare ) -> Maybe ( Position, GameSquare )
@@ -173,17 +174,17 @@ hasDoubledPawn direction model player tuple =
         ( position, _ ) =
             tuple
     in
-        case (getGameSquare (Position position.x (position.y + direction)) model.board) of
-            Just value ->
-                case value of
-                    Occupied player Pawn ->
-                        Just tuple
+    case getGameSquare (Position position.x (position.y + direction)) model.board of
+        Just value ->
+            case value of
+                Occupied _ Pawn ->
+                    Just tuple
 
-                    _ ->
-                        Nothing
+                _ ->
+                    Nothing
 
-            Nothing ->
-                Nothing
+        Nothing ->
+            Nothing
 
 
 doubledPawns : Player -> GameModel -> Moves -> Float
@@ -192,13 +193,14 @@ doubledPawns player model moves =
         direction =
             if player == White then
                 -1
+
             else
                 1
     in
-        findPiecesBy (byPlayerPiecePredicate player Pawn) model.board
-            |> List.filterMap (hasDoubledPawn direction model player)
-            |> List.length
-            |> toFloat
+    findPiecesBy (byPlayerPiecePredicate player Pawn) model.board
+        |> List.filterMap (hasDoubledPawn direction model player)
+        |> List.length
+        |> toFloat
 
 
 toSetHelper : List ( Position, GameSquare ) -> Set Int -> Set Int
@@ -207,12 +209,12 @@ toSetHelper list set =
         hd =
             List.head list
     in
-        case hd of
-            Just tuple ->
-                Set.insert (Tuple.first tuple).x set
+    case hd of
+        Just tuple ->
+            Set.insert (Tuple.first tuple).x set
 
-            Nothing ->
-                set
+        Nothing ->
+            set
 
 
 toSet : List ( Position, GameSquare ) -> Set Int
@@ -222,7 +224,7 @@ toSet list =
 
 filterForPawns player piece ( position, gameSquare ) =
     case gameSquare of
-        Occupied player piece ->
+        Occupied _ _ ->
             True
 
         _ ->
@@ -230,8 +232,8 @@ filterForPawns player piece ( position, gameSquare ) =
 
 
 countInFile : File -> Piece -> Player -> Int
-countInFile file piece player =
-    List.filter (filterForPawns player piece) file
+countInFile theFile piece player =
+    List.filter (filterForPawns player piece) theFile
         |> List.length
 
 
@@ -244,10 +246,11 @@ countIsolated player ( file1, file2 ) accumulator =
         count2 =
             countInFile file2 Pawn player
     in
-        if (count1 + count2 == 0) then
-            accumulator + 1
-        else
-            accumulator
+    if count1 + count2 == 0 then
+        accumulator + 1
+
+    else
+        accumulator
 
 
 isolatedPawns : Player -> GameModel -> Moves -> Float
@@ -258,9 +261,9 @@ isolatedPawns player model moves =
                 |> toSet
                 |> Set.toList
     in
-        List.map (\index -> adjacentFiles model index) filesWithPawns
-            |> List.foldr (countIsolated player) 0
-            |> toFloat
+    List.map (\index -> adjacentFiles model index) filesWithPawns
+        |> List.foldr (countIsolated player) 0
+        |> toFloat
 
 
 
@@ -274,12 +277,13 @@ space player model moves =
         offset =
             if player == Black then
                 0
+
             else
                 4
     in
-        List.filter (\( src, dest ) -> dest.y < (8 - offset) && dest.y >= (4 - offset)) moves
-            |> List.length
-            |> toFloat
+    List.filter (\( src, dest ) -> dest.y < (8 - offset) && dest.y >= (4 - offset)) moves
+        |> List.length
+        |> toFloat
 
 
 filterCheckConstrained : Player -> Position -> GameModel -> List Position -> List Position
@@ -296,10 +300,10 @@ allMovesFromPosition player model tuple =
         pieces =
             findPiecesBy (piecesByPlayerPredicate player) model.board
     in
-        List.map (validMovesFromTuple model) pieces
-            |> List.concat
-            |> (filterCheckConstrained player position model)
-            |> List.map (\dest -> ( position, dest ))
+    List.map (validMovesFromTuple model) pieces
+        |> List.concat
+        |> filterCheckConstrained player position model
+        |> List.map (\dest -> ( position, dest ))
 
 
 
@@ -312,8 +316,8 @@ allMoves player model =
         pieces =
             findPiecesBy (byPlayerPredicate player) model.board
     in
-        List.map (allMovesFromPosition player model) pieces
-            |> List.concat
+    List.map (allMovesFromPosition player model) pieces
+        |> List.concat
 
 
 countMobile : Player -> ( Position, GameSquare ) -> Int -> Int
@@ -325,36 +329,41 @@ countMobile player tuple accumulator =
         rank =
             if player == White then
                 7
+
             else
                 0
     in
-        case gameSquare of
-            Occupied _ Rook ->
-                if (position == (Position 0 rank)) || (position == (Position 7 rank)) then
-                    accumulator
-                else
-                    accumulator + 1
-
-            Occupied _ Bishop ->
-                if (position == (Position 2 rank)) || (position == (Position 5 rank)) then
-                    accumulator
-                else
-                    accumulator + 1
-
-            Occupied _ Queen ->
-                if (position == (Position 3 rank)) then
-                    accumulator
-                else
-                    accumulator + 1
-
-            Occupied _ Knight ->
-                if (position == (Position 1 rank)) || (position == (Position 6 rank)) then
-                    accumulator
-                else
-                    accumulator + 1
-
-            _ ->
+    case gameSquare of
+        Occupied _ Rook ->
+            if (position == Position 0 rank) || (position == Position 7 rank) then
                 accumulator
+
+            else
+                accumulator + 1
+
+        Occupied _ Bishop ->
+            if (position == Position 2 rank) || (position == Position 5 rank) then
+                accumulator
+
+            else
+                accumulator + 1
+
+        Occupied _ Queen ->
+            if position == Position 3 rank then
+                accumulator
+
+            else
+                accumulator + 1
+
+        Occupied _ Knight ->
+            if (position == Position 1 rank) || (position == Position 6 rank) then
+                accumulator
+
+            else
+                accumulator + 1
+
+        _ ->
+            accumulator
 
 
 
@@ -366,7 +375,7 @@ countMobile player tuple accumulator =
 mobility : Player -> GameModel -> Moves -> Float
 mobility player model _ =
     findPiecesBy (byPlayerPredicate player) model.board
-        |> (List.foldr (countMobile player) 0)
+        |> List.foldr (countMobile player) 0
         |> toFloat
 
 
