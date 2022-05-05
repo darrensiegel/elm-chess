@@ -10,10 +10,9 @@ Elm.
 
 ## Details
 
-My original plan was to implement the chess engine as a webservice, which then a client application (written in Elm) would
-send requests to in order to receive the computer generated moves. I figured this would be a good way for me to finally
-gain some experience with Elm. After digging in and building the beginnings of the client, I was enjoying the development
-enough that I continued and implemented everything in Elm, client-side, eschewing my original plan. 
+My original plan was to implement the chess engine server side, which then a client application (written in Elm) would
+send requests to in order to receive the computer generated moves. After digging in and building the beginnings of the client, I was enjoying the development
+enough that I continued and implemented everything in Elm.
 
 ### Module `Engine`
 
