@@ -48,6 +48,4 @@ $ elm-reactor
 ```
 
 ## Feedback
-
-Besides being entirely new to Elm, I am still fairly new to functional programming. If you have any feedback or suggestions
-I'd love to hear them. 
+If you have any feedback or suggestions I'd love to hear them. 
