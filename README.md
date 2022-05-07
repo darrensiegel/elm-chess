@@ -1,6 +1,6 @@
 # elm-chess
 
-A human versus computer chess game, entirely in Elm. Nothing fancy: play it live [here](https://elm-chess.com).
+A human versus computer chess game, entirely in Elm. Nothing fancy: play it live [here](https://s3.amazonaws.com/elm-chess.com/index.html).
 
 ## Background
 
